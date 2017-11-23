@@ -1,0 +1,8 @@
+
+*.pyc
+*.png
+*.csv
+
+.ipynb_checkpoints/
+test/
+archives/
