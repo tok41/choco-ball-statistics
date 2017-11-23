@@ -18,7 +18,7 @@ def create_table(con, table_name):
     データテーブルを作成
     """
     sql = 'CREATE TABLE ' + table_name + '('
-    sql += 'id integer primary key autoincrement,'
+    sql += 'id integer primary key,'
     sql += 'measure_date text,'
     sql += 'best_before text,'
     sql += 'weight real,'
