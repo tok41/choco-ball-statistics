@@ -1,7 +1,10 @@
 
 *.pyc
 *.png
+
 *.csv
+
+*.db
 
 .ipynb_checkpoints/
 test/

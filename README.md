@@ -10,3 +10,8 @@
 
 - env.yaml
 
+## Directory
+
+- data : データファイル、DBファイルを配置する
+  - insert_chocoball.py : データimport用のpythonスクリプト
+
