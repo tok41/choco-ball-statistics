@@ -8,6 +8,7 @@ import sys, os
 import sqlite3
 import numpy as np
 import pandas as pd
+import scipy.stats as stats
 
 import matplotlib
 matplotlib.use('Agg')
@@ -53,22 +54,27 @@ def get_date_str():
 # # 基礎集計
 def output_hist(data, plt_file, min_range=27.0, max_range=31.0, step=0.1, spec=28.0):
     b = np.arange(min_range, max_range, step)
-    ret = plt.hist(data['net_weight'], 
-                   bins=b, color="#0000FF", alpha=0.5, edgecolor="#0000FF", 
-                   label='measure')
-    plt.vlines(x=spec, ymin=0, ymax=ret[0].max(), 
-               colors='#FF0000', linewidths=2, label='spec')
+    ret = plt.hist(data['net_weight'],
+                       bins=b, color="#0000FF", alpha=0.5, edgecolor="#0000FF",
+                       label='measure', normed=True)
+    plt.vlines(x=spec, ymin=0, ymax=ret[0].max(),
+                   colors='#FF0000', linewidths=2, label='spec')
+    # 最尤推定パラメータの分布
+    x = np.linspace(min_range, max_range, 300)
+    y = stats.norm.pdf(
+        x, loc=data['net_weight'].mean(), scale=data['net_weight'].std())
+    plt.plot(x, y, lw=3, color='#0000FF', label='MLE')
     plt.legend()
     plt.xlabel('net weight [g]')
     plt.ylabel('frequency')
     plt.savefig(plt_file)
     print 'save_figure : {}'.format(plt_file)
-
+    
 
 # メイン処理
 def main():
-    db_file = '../data/choco-ball.db'
-    table_name = 'measurement'
+    db_file = args.db
+    table_name = args.table
     # 計測データ取得
     m_data = get_data(db_file=db_file, table_name=table_name)
     # ファイル名のラベルのために日付を取得
