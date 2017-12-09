@@ -21,12 +21,15 @@ def create_table(con, table_name):
     sql += 'id integer primary key,'
     sql += 'measure_date text,'
     sql += 'best_before text,'
+    sql += 'prd_number text,'
     sql += 'weight real,'
     sql += 'box_weight real,'
     sql += 'ball_number integer,'
     sql += 'factory text,'
     sql += 'shop text,'
-    sql += 'angel integer'
+    sql += 'angel integer,'
+    sql += 'campaign integer,'
+    sql += 'taste integer'
     sql += ');'
     #print sql
     con.execute(sql)
@@ -40,7 +43,7 @@ def insert_data(con, data_file, table_name):
     """
     print 'InsertInto : {} -> {}'.format(data_file, table_name)
     data = pd.read_csv(data_file, encoding="utf-8")
-    con.executemany('insert into {} (measure_date,best_before,weight,box_weight,ball_number,factory,shop,angel) values (?,?,?,?,?,?,?,?)'.format(table_name), np.array(data))
+    con.executemany('insert into {} (measure_date,best_before,prd_number,weight,box_weight,ball_number,factory,shop,angel,campaign,taste) values (?,?,?,?,?,?,?,?,?,?,?)'.format(table_name), np.array(data))
     con.commit()
 
 

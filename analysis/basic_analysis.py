@@ -25,7 +25,7 @@ args = parser.parse_args()
 
 
 # # データの取得
-def get_data(db_file='../data/choco-ball.db', table_name='measurement'):
+def get_data(db_file='../data/choco-ball.db', table_name='measurement', filter_str=None):
     """
     dbファイルから計測データを取得する
     
@@ -34,16 +34,19 @@ def get_data(db_file='../data/choco-ball.db', table_name='measurement'):
     """
     con = sqlite3.connect(db_file)
     sql = 'SELECT '
-    sql += 'measure_date,best_before,weight,box_weight,ball_number,factory,shop,angel '
+    sql += 'measure_date,best_before,prd_number,weight,box_weight,ball_number,factory,shop,angel,campaign,taste '
     sql += ', (weight - box_weight), (weight - box_weight)/ball_number '
-    sql += 'FROM ' + table_name
+    sql += 'FROM ' + table_name + ' '
+    if filter_str is not None:
+        sql += 'WHERE ' + filter_str
     sql += ';'
     sql_result = con.execute(sql)
     res = sql_result.fetchall()
     con.close()
-    data = pd.DataFrame(res, columns=['measure_date','best_before','weight','box_weight','ball_number','factory','shop','angel', 'net_weight', 'mean_weight'])
+    data = pd.DataFrame(res, columns=['measure_date','best_before','prd_number','weight','box_weight','ball_number','factory','shop','angel','campaign','taste','net_weight','mean_weight'])
     print 'Shape of MeasurementData(record_num, n_columns) : {}'.format(data.shape)
     return data
+
 
 def get_date_str():
     tdatetime = dt.now()
@@ -69,18 +72,29 @@ def output_hist(data, plt_file, min_range=27.0, max_range=31.0, step=0.1, spec=2
     plt.ylabel('frequency')
     plt.savefig(plt_file)
     print 'save_figure : {}'.format(plt_file)
-    
+
 
 # メイン処理
 def main():
     db_file = args.db
     table_name = args.table
+    filter_str = 'taste=0'
     # 計測データ取得
-    m_data = get_data(db_file=db_file, table_name=table_name)
+    m_data = get_data(db_file=db_file, table_name=table_name, filter_str=filter_str)
     # ファイル名のラベルのために日付を取得
     t_str = get_date_str()
     # データ集計
     output_hist(data=m_data, plt_file='fig/base_hist_{}.png'.format(t_str))
+    # 表示用
+    print '| 計測データ数 | {} |'.format(m_data.shape[0])
+    print '| 銀のエンゼル出現数 | {} |'.format((m_data['angel']==1).sum())
+    print '| 金のエンゼル出現数 | {} |'.format((m_data['angel']==2).sum())
+    print('| 正味重量 | %2.3f | %2.3f | %2.3f | %2.3f |' % (
+        (m_data['net_weight']).min(), (m_data['net_weight']).median(),
+        (m_data['net_weight']).max(), (m_data['net_weight']).mean()))
+    print('| 個数 | %2.3f | %2.3f | %2.3f | %2.3f |' % (
+        (m_data['ball_number']).min(), (m_data['ball_number']).median(),
+        (m_data['ball_number']).max(), (m_data['ball_number']).mean()))
 
 
 if __name__ == '__main__':
