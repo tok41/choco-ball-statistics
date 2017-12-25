@@ -68,21 +68,19 @@ if __name__ == '__main__':
     
     fig = plt.figure(figsize = (10, 6))
 
-    def update(i):
-        plt.cla() # グラフ領域のクリア
-
-        p_trace = getMCMCResult(data_angel[:i+1])
-        ret = plt.hist(p_trace, bins=np.linspace(0, 0.5, 50), normed=True,
-                           color="#0000FF", alpha=0.5, edgecolor="#0000FF", lw=2)
-        plt.xlim([0, 0.5])
-        N = len(p_trace)
-        bci = np.sort(p_trace)[int(N*0.95)]
-        plt.vlines(x=bci, ymin=0, ymax=ret[0].max(),
-                       label='95% BayesCredibleInterval',
-                       color='red', linestyles='--', linewidths=2)
-        plt.legend(loc="upper right")
-        plt.title('observation number = %d'%(i+1))
-    ani = anm.FuncAnimation(fig, update, interval=300, frames=len(data_angel))
-    ani.save("fig/estimate_angel_rate.gif", writer = 'imagemagick')
+    ### 静止画の保存
+    p_trace = getMCMCResult(data_angel)
+    ret = plt.hist(p_trace, bins=np.linspace(0, 0.5, 50), normed=True,
+                       color="#0000FF", alpha=0.5, edgecolor="#0000FF", lw=2)
+    plt.xlim([0, 0.5])
+    N = len(p_trace)
+    bci = np.sort(p_trace)[int(N*0.95)]
+    plt.vlines(x=bci, ymin=0, ymax=ret[0].max(),
+                   label='95% BayesCredibleInterval',
+                   color='red', linestyles='--', linewidths=2)
+    plt.legend(loc="upper right")
+    plt.title('observation number = %d'%(len(data_angel)))
     
+    plt.savefig('fig/estimate_angel_rate_latest.png')
+    print '95% BayesCredibleInterval : {}'.format(bci)
     
