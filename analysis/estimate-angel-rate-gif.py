@@ -62,8 +62,8 @@ def getMCMCResult(data, n_sample=15000, n_burn=5000):
 
 if __name__ == '__main__':
     #data = get_data(filter_str='taste=0')
-    #data = get_data(filter_str='campaign is not 1')
-    data = get_data(filter_str='campaign is 1')
+    data = get_data(filter_str='campaign is not 1')
+    #data = get_data(filter_str='campaign is 1')
     data_angel = data['angel'].values
     
     fig = plt.figure(figsize = (10, 6))
@@ -76,9 +76,12 @@ if __name__ == '__main__':
                            color="#0000FF", alpha=0.5, edgecolor="#0000FF", lw=2)
         plt.xlim([0, 0.5])
         N = len(p_trace)
-        bci = np.sort(p_trace)[int(N*0.95)]
-        plt.vlines(x=bci, ymin=0, ymax=ret[0].max(),
-                       label='95% BayesCredibleInterval',
+        bci_g = np.sort(p_trace)[int(N*0.95)]
+        bci_l = np.sort(p_trace)[int(N*0.05)]
+        plt.vlines(x=bci_g, ymin=0, ymax=ret[0].max(),
+                       label='90% BayesCredibleInterval',
+                       color='red', linestyles='--', linewidths=2)
+        plt.vlines(x=bci_l, ymin=0, ymax=ret[0].max(),
                        color='red', linestyles='--', linewidths=2)
         plt.legend(loc="upper right")
         plt.title('observation number = %d'%(i+1))

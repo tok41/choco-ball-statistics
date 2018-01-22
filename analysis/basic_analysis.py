@@ -4,7 +4,8 @@
 # # 目的
 # - 基礎的な集計をする
 
-import sys, os
+import sys
+import os
 import sqlite3
 import numpy as np
 import pandas as pd
@@ -25,10 +26,11 @@ args = parser.parse_args()
 
 
 # # データの取得
-def get_data(db_file='../data/choco-ball.db', table_name='measurement', filter_str=None):
+def get_data(db_file='../data/choco-ball.db',
+             table_name='measurement', filter_str=None):
     """
     dbファイルから計測データを取得する
-    
+
     TODO:
         エラー処理を入れる
     """
@@ -43,8 +45,13 @@ def get_data(db_file='../data/choco-ball.db', table_name='measurement', filter_s
     sql_result = con.execute(sql)
     res = sql_result.fetchall()
     con.close()
-    data = pd.DataFrame(res, columns=['measure_date','best_before','prd_number','weight','box_weight','ball_number','factory','shop','angel','campaign','taste','net_weight','mean_weight'])
-    print 'Shape of MeasurementData(record_num, n_columns) : {}'.format(data.shape)
+    data = pd.DataFrame(res, columns=['measure_date', 'best_before',
+                                      'prd_number', 'weight', 'box_weight',
+                                      'ball_number', 'factory', 'shop',
+                                      'angel', 'campaign', 'taste',
+                                      'net_weight', 'mean_weight'])
+    print 'Shape of MeasurementData(record_num, n_columns) : {}'.format(
+        data.shape)
     return data
 
 
@@ -55,13 +62,14 @@ def get_date_str():
 
 
 # # 基礎集計
-def output_hist(data, plt_file, min_range=27.0, max_range=31.0, step=0.1, spec=28.0):
+def output_hist(data, plt_file,
+                min_range=27.0, max_range=31.0, step=0.1, spec=28.0):
     b = np.arange(min_range, max_range, step)
     ret = plt.hist(data['net_weight'],
-                       bins=b, color="#0000FF", alpha=0.5, edgecolor="#0000FF",
-                       label='measure', normed=True)
+                   bins=b, color="#0000FF", alpha=0.5, edgecolor="#0000FF",
+                   label='measure', normed=True)
     plt.vlines(x=spec, ymin=0, ymax=ret[0].max(),
-                   colors='#FF0000', linewidths=2, label='spec')
+               colors='#FF0000', linewidths=2, label='spec')
     # 最尤推定パラメータの分布
     x = np.linspace(min_range, max_range, 300)
     y = stats.norm.pdf(
@@ -80,15 +88,16 @@ def main():
     table_name = args.table
     filter_str = 'taste=0'
     # 計測データ取得
-    m_data = get_data(db_file=db_file, table_name=table_name, filter_str=filter_str)
+    m_data = get_data(db_file=db_file, table_name=table_name,
+                      filter_str=filter_str)
     # ファイル名のラベルのために日付を取得
     t_str = get_date_str()
     # データ集計
     output_hist(data=m_data, plt_file='fig/base_hist_{}.png'.format(t_str))
     # 表示用
     print '| 計測データ数 | {} |'.format(m_data.shape[0])
-    print '| 銀のエンゼル出現数 | {} |'.format((m_data['angel']==1).sum())
-    print '| 金のエンゼル出現数 | {} |'.format((m_data['angel']==2).sum())
+    print '| 銀のエンゼル出現数 | {} |'.format((m_data['angel'] == 1).sum())
+    print '| 金のエンゼル出現数 | {} |'.format((m_data['angel'] == 2).sum())
     print('| 正味重量 | %2.3f | %2.3f | %2.3f | %2.3f |' % (
         (m_data['net_weight']).min(), (m_data['net_weight']).median(),
         (m_data['net_weight']).max(), (m_data['net_weight']).mean()))
@@ -104,4 +113,3 @@ if __name__ == '__main__':
     else:
         print 'Not Exist Datafile : {}'.format(args.db)
         sys.exit(1)
-
