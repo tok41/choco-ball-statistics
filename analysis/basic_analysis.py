@@ -20,6 +20,8 @@ from datetime import datetime as dt
 import argparse
 
 parser = argparse.ArgumentParser(description='argparser')
+parser.add_argument('--filter', type=str, default='taste=0')
+parser.add_argument('--spec', type=float, default=28.0)
 parser.add_argument('--table', type=str, default='measurement')
 parser.add_argument('--db', type=str, default='../data/choco-ball.db')
 args = parser.parse_args()
@@ -42,6 +44,7 @@ def get_data(db_file='../data/choco-ball.db',
     if filter_str is not None:
         sql += 'WHERE ' + filter_str
     sql += ';'
+    # print(sql)
     sql_result = con.execute(sql)
     res = sql_result.fetchall()
     con.close()
@@ -62,8 +65,9 @@ def get_date_str():
 
 
 # # 基礎集計
-def output_hist(data, plt_file,
-                min_range=27.0, max_range=31.0, step=0.1, spec=28.0):
+def output_hist(data, plt_file, step=0.1, spec=28.0):
+    min_range = np.min([data['net_weight'].min(), spec]) * 0.9
+    max_range = data['net_weight'].max() * 1.1
     b = np.arange(min_range, max_range, step)
     ret = plt.hist(data['net_weight'],
                    bins=b, color="#0000FF", alpha=0.5, edgecolor="#0000FF",
@@ -86,14 +90,16 @@ def output_hist(data, plt_file,
 def main():
     db_file = args.db
     table_name = args.table
-    filter_str = 'taste=0'
+    filter_str = args.filter
     # 計測データ取得
     m_data = get_data(db_file=db_file, table_name=table_name,
                       filter_str=filter_str)
     # ファイル名のラベルのために日付を取得
     t_str = get_date_str()
     # データ集計
-    output_hist(data=m_data, plt_file='fig/base_hist_{}.png'.format(t_str))
+    output_hist(data=m_data,
+                plt_file='fig/base_hist_{}.png'.format(t_str),
+                spec=args.spec)
     # 表示用
     print '| 計測データ数 | {} |'.format(m_data.shape[0])
     print '| 銀のエンゼル出現数 | {} |'.format((m_data['angel'] == 1).sum())
