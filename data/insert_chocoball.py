@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import sys, os
+import sys
+import os
 import sqlite3
 import numpy as np
 import pandas as pd
@@ -12,6 +13,7 @@ parser.add_argument('--file', type=str, default=None)
 parser.add_argument('--table', type=str, default='measurement')
 parser.add_argument('--db', type=str, default='choco-ball.db')
 args = parser.parse_args()
+
 
 def create_table(con, table_name):
     """
@@ -29,13 +31,15 @@ def create_table(con, table_name):
     sql += 'shop text,'
     sql += 'angel integer,'
     sql += 'campaign integer,'
-    sql += 'taste integer'
+    sql += 'taste integer, '
+    sql += 'buyer text'
     sql += ');'
-    #print sql
+    print sql
     con.execute(sql)
     # create index
     sql = 'CREATE INDEX id_index on {}(id);'.format(table_name)
     con.execute(sql)
+
 
 def insert_data(con, data_file, table_name):
     """
@@ -43,7 +47,8 @@ def insert_data(con, data_file, table_name):
     """
     print 'InsertInto : {} -> {}'.format(data_file, table_name)
     data = pd.read_csv(data_file, encoding="utf-8")
-    con.executemany('insert into {} (measure_date,best_before,prd_number,weight,box_weight,ball_number,factory,shop,angel,campaign,taste) values (?,?,?,?,?,?,?,?,?,?,?)'.format(table_name), np.array(data))
+    con.executemany('insert into {} (measure_date,best_before,prd_number,weight,box_weight,ball_number,factory,shop,angel,campaign,taste, buyer) values (?,?,?,?,?,?,?,?,?,?,?,?)'.format(
+        table_name), np.array(data))
     con.commit()
 
 
@@ -63,13 +68,12 @@ def main():
     if res[0][0] < 0.5:
         print 'Create Table : {}'.format(args.table)
         create_table(con, args.table)
-    
+
     # データのinsert
     insert_data(con, args.file, args.table)
-    
+
     con.close()
     return 0
-
 
 
 if __name__ == '__main__':
@@ -81,4 +85,3 @@ if __name__ == '__main__':
     else:
         print 'Not Exist Datafile : {}'.format(args.file)
         sys.exit(1)
-    
