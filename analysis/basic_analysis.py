@@ -100,7 +100,16 @@ def main():
     output_hist(data=m_data,
                 plt_file='fig/base_hist_{}.png'.format(t_str),
                 spec=args.spec)
-    # 表示用
+    # 集計結果表示用
+    latest_date = m_data['measure_date'].max()
+    latest_data = m_data[m_data['measure_date']==latest_date][['measure_date', 'best_before',
+                                      'weight', 'box_weight', 'ball_number', 'factory', 'shop',
+                                      'angel', 'net_weight', 'mean_weight']]
+    latest_data['angel'] = ['銀' if a==1 else 'なし' for a in latest_data['angel']]
+    latest_data['net_weight'] = ["%2.3f"%(a) for a in latest_data['net_weight']]
+    latest_data['mean_weight'] = ["%2.3f"%(a) for a in latest_data['mean_weight']]
+    print(latest_data.to_csv(sep='|', index=False, header=False))
+    # 基礎集計表示用
     print('| 計測データ数 | {} |'.format(m_data.shape[0]))
     print('| 銀のエンゼル出現数 | {} |'.format((m_data['angel'] == 1).sum()))
     print('| 金のエンゼル出現数 | {} |'.format((m_data['angel'] == 2).sum()))
@@ -114,7 +123,7 @@ def main():
 
 if __name__ == '__main__':
     if os.path.exists(args.db):
-        print('DB-File Exist : {}'.format(args.db))
+        print('DB-File : {}'.format(args.db))
         main()
     else:
         print('Not Exist Datafile : {}'.format(args.db))
