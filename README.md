@@ -5,7 +5,7 @@
 
 ## Required
 
-- python : 2.7.14
+- python : 3.6.4
 - conda 4.3.30
 
 - env.yaml
@@ -15,3 +15,4 @@
 - data : データファイル、DBファイルを配置する
   - insert_chocoball.py : データimport用のpythonスクリプト
 
+- analysis : データ分析用

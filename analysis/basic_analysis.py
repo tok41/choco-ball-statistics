@@ -53,8 +53,8 @@ def get_data(db_file='../data/choco-ball.db',
                                       'ball_number', 'factory', 'shop',
                                       'angel', 'campaign', 'taste',
                                       'net_weight', 'mean_weight'])
-    print 'Shape of MeasurementData(record_num, n_columns) : {}'.format(
-        data.shape)
+    print('Shape of MeasurementData(record_num, n_columns) : {}'.format(
+        data.shape))
     return data
 
 
@@ -71,7 +71,7 @@ def output_hist(data, plt_file, step=0.1, spec=28.0):
     b = np.arange(min_range, max_range, step)
     ret = plt.hist(data['net_weight'],
                    bins=b, color="#0000FF", alpha=0.5, edgecolor="#0000FF",
-                   label='measure', normed=True)
+                   label='measure', density=True)
     plt.vlines(x=spec, ymin=0, ymax=ret[0].max(),
                colors='#FF0000', linewidths=2, label='spec')
     # 最尤推定パラメータの分布
@@ -83,7 +83,7 @@ def output_hist(data, plt_file, step=0.1, spec=28.0):
     plt.xlabel('net weight [g]')
     plt.ylabel('frequency')
     plt.savefig(plt_file)
-    print 'save_figure : {}'.format(plt_file)
+    print('save_figure : {}'.format(plt_file))
 
 
 # メイン処理
@@ -101,9 +101,9 @@ def main():
                 plt_file='fig/base_hist_{}.png'.format(t_str),
                 spec=args.spec)
     # 表示用
-    print '| 計測データ数 | {} |'.format(m_data.shape[0])
-    print '| 銀のエンゼル出現数 | {} |'.format((m_data['angel'] == 1).sum())
-    print '| 金のエンゼル出現数 | {} |'.format((m_data['angel'] == 2).sum())
+    print('| 計測データ数 | {} |'.format(m_data.shape[0]))
+    print('| 銀のエンゼル出現数 | {} |'.format((m_data['angel'] == 1).sum()))
+    print('| 金のエンゼル出現数 | {} |'.format((m_data['angel'] == 2).sum()))
     print('| 正味重量 | %2.3f | %2.3f | %2.3f | %2.3f |' % (
         (m_data['net_weight']).min(), (m_data['net_weight']).median(),
         (m_data['net_weight']).max(), (m_data['net_weight']).mean()))
@@ -114,8 +114,8 @@ def main():
 
 if __name__ == '__main__':
     if os.path.exists(args.db):
-        print 'DB-File Exist : {}'.format(args.db)
+        print('DB-File Exist : {}'.format(args.db))
         main()
     else:
-        print 'Not Exist Datafile : {}'.format(args.db)
+        print('Not Exist Datafile : {}'.format(args.db))
         sys.exit(1)

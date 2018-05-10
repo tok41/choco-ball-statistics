@@ -3,8 +3,6 @@
 import sys
 import os
 import sqlite3
-#import numpy as np
-#import pandas as pd
 import argparse
 
 parser = argparse.ArgumentParser(description='argparser')
@@ -24,7 +22,7 @@ def create_table(con, table_name):
     sql += 'dataID integer, '
     sql += 'path text'
     sql += ');'
-    print sql
+    print(sql)
     con.execute(sql)
 
 
@@ -32,8 +30,8 @@ def insert_data(con, data_file, data_id, table_name):
     """
     data_file_pathとdataIDを指定して、テーブルに書き出す
     """
-    print 'InsertInto :{}:{} -> {}'.format(
-        data_id, data_file, table_name)
+    print('InsertInto :{}:{} -> {}'.format(
+        data_id, data_file, table_name))
     con.execute(
         'insert into {} (dataID, path) values ({},"{}")'.format(
             table_name, data_id, data_file))
@@ -45,9 +43,9 @@ def main():
     print('data ID : {}'.format(args.id))
     # open DB
     if os.path.exists(args.db):
-        print 'open DB file : {}'.format(args.db)
+        print('open DB file : {}'.format(args.db))
     else:
-        print 'create DB file : {}'.format(args.db)
+        print('create DB file : {}'.format(args.db))
     con = sqlite3.connect(args.db, isolation_level=None)
 
     # テーブルの存在確認
@@ -55,7 +53,7 @@ def main():
     sql_result = con.execute(sql)
     res = sql_result.fetchall()
     if res[0][0] < 0.5:
-        print 'Create Table : {}'.format(args.table)
+        print('Create Table : {}'.format(args.table))
         create_table(con, args.table)
 
     # データのinsert
@@ -69,10 +67,10 @@ def main():
 
 if __name__ == '__main__':
     if args.file is None:
-        print 'Nothing Imagefile : Use option "--file=FILENAME"'
+        print('Nothing Imagefile : Use option "--file=FILENAME"')
         sys.exit(1)
     if os.path.exists(args.file):
         main()
     else:
-        print 'Not Exist Datafile : {}'.format(args.file)
+        print('Not Exist Datafile : {}'.format(args.file))
         sys.exit(1)

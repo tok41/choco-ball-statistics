@@ -84,7 +84,7 @@ def getAngelRate(data_angel, fig_name='fig/estimate_angel_rate_latest.png'):
     ax = fig.add_subplot(1, 1, 1)
 
     p_trace = getMCMCResult(data_angel)
-    ret = ax.hist(p_trace, bins=np.linspace(0, 0.5, 50), normed=True,
+    ret = ax.hist(p_trace, bins=np.linspace(0, 0.5, 50), density=True,
                   color="#0000FF", alpha=0.5, edgecolor="#0000FF", lw=2)
     ax.set_xlim([0, 0.5])
     N = len(p_trace)
@@ -99,7 +99,7 @@ def getAngelRate(data_angel, fig_name='fig/estimate_angel_rate_latest.png'):
     ax.set_title('observation number = %d' % (len(data_angel)))
 
     fig.savefig(fig_name)
-    print '95% BayesCredibleInterval : {}-{}'.format(bci_l, bci_g)
+    print('95% BayesCredibleInterval : {}-{}'.format(bci_l, bci_g))
 
     return 0
 
