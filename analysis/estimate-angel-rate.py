@@ -100,6 +100,7 @@ def getAngelRate(data_angel, fig_name='fig/estimate_angel_rate_latest.png'):
 
     fig.savefig(fig_name)
     print('95% BayesCredibleInterval : {}-{}'.format(bci_l, bci_g))
+    print('ExpectedValue : {}'.format(p_trace.mean()))
 
     return 0
 
