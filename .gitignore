@@ -3,7 +3,11 @@
 *.png
 *.gif
 
+*.jpeg
+*.png
 *.csv
+*.xml
+*.npy
 
 *.db
 
