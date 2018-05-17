@@ -1,4 +1,4 @@
-# Statistics of Chjocolate-Ball
+# Statistics of Choco-Ball
 
 - チョコボールの統計データ分析をします
 - http://chocolate-ball.hatenablog.com/
@@ -12,7 +12,5 @@
 
 ## Directory
 
-- data : データファイル、DBファイルを配置する
-  - insert_chocoball.py : データimport用のpythonスクリプト
-
+- data : DBファイルの更新などデータ関連
 - analysis : データ分析用
