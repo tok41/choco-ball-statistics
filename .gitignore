@@ -3,11 +3,13 @@
 *.png
 *.gif
 
+*.JPG
 *.jpeg
 *.png
 *.csv
 *.xml
 *.npy
+*.npz
 
 *.db
 
