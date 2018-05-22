@@ -51,7 +51,7 @@ def getBBoxData(anno_file, classes, data_dir):
         bbox_list.append([obj['bndbox']['ymin'], obj['bndbox']
                           ['xmin'], obj['bndbox']['ymax'], obj['bndbox']['xmax']])
         obj_names.append(obj['name'])
-    bboxs = np.array(bbox_list, dtype=np.float32) # データ型を指定
+    bboxs = np.array(bbox_list, dtype=np.float32)  # データ型を指定
     obj_names = np.array(obj_names)
     obj_ids = np.array(
         list(map(lambda x: classes.index(x), obj_names)), dtype=np.int32)
@@ -85,16 +85,21 @@ def getBBoxDataSet(data_dir, classes):
     return (imgs, bboxs, obj_ids)
 
 
-def main(args):
-    classes_file = args.classes
-    data_dir = args.data_dir
-
-    # カテゴリファイル
+def getClasses(classes_file):
     classes = list()
     with open(classes_file) as fd:
         for one_line in fd.readlines():
             cl = one_line.split('\n')[0]
             classes.append(cl)
+    return classes
+
+
+def main(args):
+    classes_file = args.classes
+    data_dir = args.data_dir
+
+    # カテゴリファイル
+    classes = getClasses(classes_file)
     print('classes_file : ', classes_file)
     print('classes : ', classes)
     print('data_dir : ', data_dir)
