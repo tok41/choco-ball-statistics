@@ -39,8 +39,11 @@ def insert_data(con, data_file, data_id, table_name):
 
 
 def main():
+    did = args.id
+    if args.id is None:
+        did = (((args.file.split('.'))[0]).split('_'))[-1]
     print('insert package image : {}'.format(args.file))
-    print('data ID : {}'.format(args.id))
+    print('data ID : {}'.format(did))
     # open DB
     if os.path.exists(args.db):
         print('open DB file : {}'.format(args.db))
@@ -59,7 +62,7 @@ def main():
     # データのinsert
     HOME = os.path.dirname(os.path.abspath(__file__))
     full_path = os.path.join(HOME, args.file)
-    insert_data(con, full_path, args.id, args.table)
+    insert_data(con, full_path, did, args.table)
 
     con.close()
     return 0
