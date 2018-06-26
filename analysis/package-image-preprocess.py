@@ -7,6 +7,7 @@
 
 import os
 import numpy as np
+import glob
 
 import math
 from scipy import stats
@@ -128,25 +129,31 @@ def showImage(im):
     fig.waitforbuttonpress(-1)
 
 
-def main(args):
-    # # 画像データの取り込み
-    im_dir = args.im_dir
-    im_name = args.im_name
-    org_img = cv2.imread(os.path.join(im_dir, im_name))
+def trimPackageImage(im_path, show=False, brown_basis=(0.4, 0.5)):
+    """
+    パッケージ画像をトリミングする
+    Args:
+        im_path : 画像ファイルのフルパス
+        show : 処理画像を表示するかを決めるフラグ(default=False)
+        brown_basis : 水平をとるために茶色領域を抽出する基準
+    Returns:
+        package_img : トリム済みパッケージ画像
+    """
+    org_img = cv2.imread(im_path)
     # 画像の端はノイズが載っていることがあるのでトリミングする
     img = org_img[10:-10, 10:-10, :]
-    print('image : ', os.path.join(im_dir, im_name))
+    print('image : ', im_path)
 
     # # パッケージ正面を切り抜く
     # ## 茶色と黄色のフィルタを作る
-    roi_brown, roi_yellow = getROIFilter(img, show=args.show)
+    roi_brown, roi_yellow = getROIFilter(img, show=show)
     # ## 回転補正
     # 上から茶色までの距離
     edge_up_b = getEdge(roi_brown, axis=1, right=False)
     # 上辺を水平になるように回転する
     # 全体の4割〜半分までの茶色距離を水平にするようにする
-    rang = (int(roi_brown.shape[1] * 0.4),
-            int(roi_brown.shape[1] * 0.5))
+    rang = (int(roi_brown.shape[1] * brown_basis[0]),
+            int(roi_brown.shape[1] * brown_basis[1]))
     # 横軸の座標
     x = np.arange(0, roi_brown.shape[1])
     # 座標
@@ -158,7 +165,7 @@ def main(args):
     print('rotate angle(degree):', rad * 180 / math.pi)
     # 回転
     rot_img = ndimage.rotate(img, rad * 180 / math.pi, reshape=False)
-    if args.show:
+    if show:
         showImage(rot_img)
     # ## 画像領域のトリミング
     # パッケージ部分のトリミングする
@@ -171,7 +178,7 @@ def main(args):
     height_lim = (np.min(edge_left), np.max(edge_right))
     trim_img = rot_img[width_lim[0]:width_lim[1],
                        height_lim[0]:height_lim[1]]
-    if args.show:
+    if show:
         showImage(trim_img)
     # ## パッケージ正面の切り抜き
     # スキャン画像のサイズ、パッケージ自体の大きさは同じだと仮定し、
@@ -188,12 +195,32 @@ def main(args):
     trim_img = trim_img[trim_point:]
     # 原点を規準に規定量をトリムする(スキャンする大きさは一定だと仮定する)
     package_img = trim_img[:1100, :1480]
-    if args.show:
+    if show:
         showImage(package_img)
-    # トリム画像を保存する
-    cv2.imwrite(
-        os.path.join(args.im_dir, 'trimmed_packages', im_name),
-        package_img)
+    return package_img
+
+
+def main(args):
+    # # 画像データの取り込み
+    im_dir = args.im_dir
+    im_name = args.im_name
+    if im_name is None:
+        im_path_list = glob.glob(os.path.join(im_dir, '*.png'))
+    else:
+        im_path_list = [os.path.join(im_dir, im_name)]
+
+    cnt = 0
+    for im_path in im_path_list:
+        cnt += 1
+        print("trim image : {}/{}".format(cnt, len(im_path_list)))
+
+        # パッケージ画像のトリミング
+        package_img = trimPackageImage(im_path=im_path, show=args.show)
+        # トリム画像を保存する
+        im_name = os.path.basename(im_path)
+        cv2.imwrite(
+            os.path.join(args.im_dir, 'trimmed_packages', im_name),
+            package_img)
 
 
 if __name__ == '__main__':
