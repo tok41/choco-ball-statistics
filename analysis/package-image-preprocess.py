@@ -86,25 +86,25 @@ def getROIFilter(img, show=False):
     # 黄色領域を認識するために黄色のフィルタを作成
     roi_yellow = getColorROI(frame=img,
                              h_range=(20, 80),
-                                 saturation=(100, 255),
-                                 value=(200, 255))
+                             saturation=(100, 255),
+                             value=(200, 255))
     # ## フィルタの確認
     if show:
         # ROIを3チャネルに拡張
         roi3_b = np.concatenate(
             (roi_brown[:, :, np.newaxis],
                 roi_brown[:, :, np.newaxis],
-            roi_brown[:, :, np.newaxis]), axis=2)
+             roi_brown[:, :, np.newaxis]), axis=2)
         # ROIをかぶせる
         img_masked_b = img * roi3_b
         # ROIを3チャネルに拡張
         roi3_y = np.concatenate(
             (roi_yellow[:, :, np.newaxis],
-                 roi_yellow[:, :, np.newaxis],
-            roi_yellow[:, :, np.newaxis]), axis=2)
+             roi_yellow[:, :, np.newaxis],
+             roi_yellow[:, :, np.newaxis]), axis=2)
         # ROIをかぶせる
         img_masked_y = img * roi3_y
-    
+
         fig = plt.figure(figsize=(10, 5))
         ax = fig.subplots(1, 3)
         show_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -113,18 +113,20 @@ def getROIFilter(img, show=False):
         ax[1].imshow(show_img)
         show_img = cv2.cvtColor(img_masked_y, cv2.COLOR_BGR2RGB)
         ax[2].imshow(show_img)
-        #fig.show()
+        # fig.show()
         fig.waitforbuttonpress(-1)
-    
+
     return roi_brown, roi_yellow
+
 
 def showImage(im):
     show_img = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     fig = plt.figure(figsize=(4, 4))
     ax = fig.subplots(1, 1)
     ax.imshow(show_img)
-    #fig.show()
+    # fig.show()
     fig.waitforbuttonpress(-1)
+
 
 def main(args):
     # # 画像データの取り込み
@@ -134,7 +136,7 @@ def main(args):
     # 画像の端はノイズが載っていることがあるのでトリミングする
     img = org_img[10:-10, 10:-10, :]
     print('image : ', os.path.join(im_dir, im_name))
-    
+
     # # パッケージ正面を切り抜く
     # ## 茶色と黄色のフィルタを作る
     roi_brown, roi_yellow = getROIFilter(img, show=args.show)
@@ -144,7 +146,7 @@ def main(args):
     # 上辺を水平になるように回転する
     # 全体の4割〜半分までの茶色距離を水平にするようにする
     rang = (int(roi_brown.shape[1] * 0.4),
-                int(roi_brown.shape[1] * 0.5))
+            int(roi_brown.shape[1] * 0.5))
     # 横軸の座標
     x = np.arange(0, roi_brown.shape[1])
     # 座標
@@ -200,5 +202,5 @@ if __name__ == '__main__':
     parser.add_argument('--im_dir', type=str, default='../data/packages')
     parser.add_argument('--show', action='store_true')
     args = parser.parse_args()
-    
+
     main(args)
