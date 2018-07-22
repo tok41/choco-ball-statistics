@@ -1,15 +1,21 @@
 # -*- coding: utf-8 -*-
 
+"""
+ラベル付きの画像定義ファイルを作成する。
+"""
+
 # Imports
+import os
+import sqlite3
+import pandas as pd
+import glob
 import numpy as np
 import tensorflow as tf
 
-tf.logging.set_verbosity(tf.logging.INFO)
 
-# command line arguments
-#tf.app.flags.DEFINE_boolean("bool", True, "bool value")
-#tf.app.flags.DEFINE_integer("int", 0, "int value")
 tf.app.flags.DEFINE_string("img_path", "images", "image data path")
+tf.app.flags.DEFINE_string(
+    "db_path", "../../data/choco-ball.db", "DB file path")
 
 
 def main(argv):
@@ -20,4 +26,4 @@ def main(argv):
 
 
 if __name__ == '__main__':
-    tf.app.run()
+    main()
