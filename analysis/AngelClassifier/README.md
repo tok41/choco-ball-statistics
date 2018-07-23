@@ -19,3 +19,10 @@ $ python package-image-preprocess.py
 ```
 
 ### 定義ファイルの作成
+- パッケージ画像のラベル付きリストを作成
+
+```
+$ python make-image-def.py
+$ python make-image-def.py --help で引数確認
+```
+### 学習処理
