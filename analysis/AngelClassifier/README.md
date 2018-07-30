@@ -24,5 +24,9 @@ $ python package-image-preprocess.py
 ```
 $ python make-image-def.py
 $ python make-image-def.py --help で引数確認
+
+defaultで以下のファイルが作成される
+ - image_list_test.csv
+ - image_list_train.csv
 ```
 ### 学習処理

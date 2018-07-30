@@ -7,6 +7,7 @@
 # Imports
 import os
 import sqlite3
+import numpy as np
 import pandas as pd
 import glob
 import tensorflow as tf
@@ -14,7 +15,9 @@ import tensorflow as tf
 
 tf.app.flags.DEFINE_string("img_path", "images", "image data path")
 tf.app.flags.DEFINE_string(
-    "def_file_path", "image_list.csv", "image data list file")
+    "train_list_path", "image_list_train.csv", "image data list file")
+tf.app.flags.DEFINE_string(
+    "test_list_path", "image_list_test.csv", "image data list file")
 tf.app.flags.DEFINE_string(
     "db_path", "../../data/choco-ball.db", "DB file path")
 
@@ -54,6 +57,34 @@ def makeImageDefinition(img_path, db_file):
     return df_img_def
 
 
+def splitTrainTest(df_img_def, rate=0.8):
+    """
+    TrainデータとTestデータに分割
+    Args:
+        df_img_def : pd.DataFrame, [file_path, label]
+        rate : train data rate, integer, default=0.8
+    """
+    def splitDF(data):
+        N = data.shape[0]
+        N_train = int(N*rate)
+        N_test = N - N_train
+        index = np.arange(N)
+        np.random.shuffle(index)
+        df_train = data.iloc[index[:N_train], :]
+        df_test = data.iloc[index[N_train:], :]
+        print('N={}, N_train={}, N_test={}'.format(N, N_train, N_test))
+        return df_train, df_test
+    posi_data = df_img_def[df_img_def['angel'] == 1]
+    nega_data = df_img_def[df_img_def['angel'] == 0]
+    posi_train, posi_test = splitDF(posi_data)
+    nega_train, nega_test = splitDF(nega_data)
+    df_train = pd.concat([posi_train, nega_train]).sample(
+        frac=True).reset_index(drop=True)
+    df_test = pd.concat([posi_test, nega_test]).sample(
+        frac=True).reset_index(drop=True)
+    return df_train, df_test
+
+
 def main(argv):
     FLAGS = tf.app.flags.FLAGS
     print("image_data_path : {}".format(FLAGS.img_path))
@@ -61,9 +92,12 @@ def main(argv):
     # 画像定義ファイルの作成
     df_img = makeImageDefinition(FLAGS.img_path, FLAGS.db_path)
     print('image_num : {}'.format(df_img.shape[0]))
+    df_train, df_test = splitTrainTest(df_img_def=df_img, rate=0.8)
 
     # 出力
-    df_img.to_csv(FLAGS.def_file_path, index=False, header=False)
+    #df_img.to_csv(FLAGS.def_file_path, index=False, header=False)
+    df_train.to_csv(FLAGS.train_list_path, index=False, header=False)
+    df_test.to_csv(FLAGS.test_list_path, index=False, header=False)
 
     return 0
 
