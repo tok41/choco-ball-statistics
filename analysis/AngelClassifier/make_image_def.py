@@ -10,16 +10,16 @@ import sqlite3
 import numpy as np
 import pandas as pd
 import glob
-import tensorflow as tf
+#import tensorflow as tf
 
 
-tf.app.flags.DEFINE_string("img_path", "images", "image data path")
-tf.app.flags.DEFINE_string(
-    "train_list_path", "image_list_train.csv", "image data list file")
-tf.app.flags.DEFINE_string(
-    "test_list_path", "image_list_test.csv", "image data list file")
-tf.app.flags.DEFINE_string(
-    "db_path", "../../data/choco-ball.db", "DB file path")
+# tf.app.flags.DEFINE_string("img_path", "images", "image data path")
+# tf.app.flags.DEFINE_string(
+#     "train_list_path", "image_list_train.csv", "image data list file")
+# tf.app.flags.DEFINE_string(
+#     "test_list_path", "image_list_test.csv", "image data list file")
+# tf.app.flags.DEFINE_string(
+#     "db_path", "../../data/choco-ball.db", "DB file path")
 
 
 def makeImageDefinition(img_path, db_file):
@@ -57,7 +57,7 @@ def makeImageDefinition(img_path, db_file):
     return df_img_def
 
 
-def splitTrainTest(df_img_def, rate=0.8):
+def splitTrainTest(df_img_def, rate=0.8, upsampling=False):
     """
     TrainデータとTestデータに分割
     Args:
@@ -78,6 +78,10 @@ def splitTrainTest(df_img_def, rate=0.8):
     nega_data = df_img_def[df_img_def['angel'] == 0]
     posi_train, posi_test = splitDF(posi_data)
     nega_train, nega_test = splitDF(nega_data)
+    if upsampling:
+        print('simple upsampling positive_data : {} -> {}'.format(
+            posi_train.shape[0], nega_train.shape[0]))
+        posi_train = posi_train.sample(nega_train.shape[0], replace=True)
     df_train = pd.concat([posi_train, nega_train]).sample(
         frac=True).reset_index(drop=True)
     df_test = pd.concat([posi_test, nega_test]).sample(
@@ -86,21 +90,26 @@ def splitTrainTest(df_img_def, rate=0.8):
 
 
 def main(argv):
-    FLAGS = tf.app.flags.FLAGS
-    print("image_data_path : {}".format(FLAGS.img_path))
+    #FLAGS = tf.app.flags.FLAGS
+    img_path = "images"
+    db_path = "../../data/choco-ball.db"
+    train_list_path = "image_list_train.csv"
+    test_list_path = "image_list_test.csv"
+
+    print("image_data_path : {}".format(img_path))
 
     # 画像定義ファイルの作成
-    df_img = makeImageDefinition(FLAGS.img_path, FLAGS.db_path)
+    df_img = makeImageDefinition(img_path, db_path)
     print('image_num : {}'.format(df_img.shape[0]))
     df_train, df_test = splitTrainTest(df_img_def=df_img, rate=0.8)
 
     # 出力
     #df_img.to_csv(FLAGS.def_file_path, index=False, header=False)
-    df_train.to_csv(FLAGS.train_list_path, index=False, header=False)
-    df_test.to_csv(FLAGS.test_list_path, index=False, header=False)
+    df_train.to_csv(train_list_path, index=False, header=False)
+    df_test.to_csv(test_list_path, index=False, header=False)
 
     return 0
 
 
 if __name__ == '__main__':
-    tf.app.run()
+    main()
