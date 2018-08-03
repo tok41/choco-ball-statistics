@@ -12,8 +12,8 @@ tf.app.flags.DEFINE_string(
     "train_list", "image_list_train.csv", "image data list(csv)")
 tf.app.flags.DEFINE_string(
     "test_list", "image_list_test.csv", "image data list(csv)")
-tf.app.flags.DEFINE_integer("n_batch", 10, "mini batch size")
-tf.app.flags.DEFINE_integer("n_epoch", 1, "number of epoch")
+tf.app.flags.DEFINE_integer("n_batch", 5, "mini batch size")
+tf.app.flags.DEFINE_integer("n_epoch", 10, "number of epoch")
 
 tf.app.flags.DEFINE_string("img_path", "images", "image data path")
 tf.app.flags.DEFINE_string(
@@ -71,12 +71,15 @@ def read_image(image_file, label):
         label:label [int]
     """
     contents = tf.read_file(image_file)
-    return tf.image.decode_image(contents), label
+    image = tf.image.decode_image(contents)  # 画像データを[0,1)の範囲に変換
+    image = tf.image.convert_image_dtype(image, dtype=tf.float32)
+    # return tf.image.decode_image(contents), label
+    return image, label
 
 
 # ###########################
 # ### Input data function
-def input_fn(file_path, n_batch):
+def input_fn(file_path, n_batch, n_epoch):
     """
     データ入力関数
     lambda式を使って引数を与えて入力する
@@ -88,10 +91,10 @@ def input_fn(file_path, n_batch):
     dataset = tf.data.Dataset.from_generator(
         generator,
         output_types=(tf.string, tf.int32),
-        # output_shapes=(tf.TensorShape([None, 1100, 1480, 3]), tf.TensorShape([])))\
         output_shapes=(tf.TensorShape([]), tf.TensorShape([])))\
         .map(read_image)
-    dataset = dataset.shuffle(n_batch)
+    dataset = dataset.shuffle(10000)
+    dataset = dataset.repeat(n_epoch)
     dataset = dataset.batch(n_batch)
     iterator = dataset.make_one_shot_iterator()
     images, labels = iterator.get_next()
@@ -100,10 +103,6 @@ def input_fn(file_path, n_batch):
 
 # ###########################
 # ### Define Model
-# def cnn_classifier(images, reuse):
-#     x = tf.reshape(images, [-1, 1100, 1480, 3])
-#     ret = tf.contrib.layers.flatten(x)
-#     return ret
 def cnn_classifier(images, reuse):
     with tf.variable_scope('cnn', reuse=reuse):
         x = tf.reshape(images, [-1, 1100, 1480, 3])
@@ -132,80 +131,33 @@ def main(argv):
     createImageListFile(FLAGS.img_path, FLAGS.db_path,
                         FLAGS.train_list, FLAGS.test_list)
 
-    # # ここからinput_fnに移動予定
-    # # ** train dataset
-    # def generator(): return read_csv(FLAGS.train_list)  # generator
-    #
-    # dataset = tf.data.Dataset.from_generator(
-    #     generator, (tf.string, tf.int32), (tf.TensorShape([]), tf.TensorShape([])))\
-    #     .map(read_image)
-    # dataset = dataset.shuffle(10000)
-    # dataset = dataset.repeat(FLAGS.n_epoch)
-    # dataset = dataset.batch(FLAGS.n_batch)
-    # iterator = dataset.make_one_shot_iterator()
-    # value = iterator.get_next()
-    # # ここまでinput_fnに移動予定
-    #
-    # # ここからinput_fnに移動予定
-    # # ** test dataset
-    # def generator_test(): return read_csv(FLAGS.test_list)  # generator
-    #
-    # dataset_test = tf.data.Dataset.from_generator(
-    #     generator_test, (tf.string, tf.int32), (tf.TensorShape([]), tf.TensorShape([])))\
-    #     .map(read_image)
-    # dataset_test = dataset_test.shuffle(10000)
-    # dataset_test = dataset_test.repeat(FLAGS.n_epoch)
-    # dataset_test = dataset_test.batch(FLAGS.n_batch)
-    # iterator_test = dataset_test.make_one_shot_iterator()
-    # value_test = iterator_test.get_next()
-    # # ここまでinput_fnに移動予定
-
     # Inference
-    images, labels = input_fn(FLAGS.train_list, FLAGS.n_batch)
-    #y_pred_op = tf.reshape(images, [-1, 1100, 1480, 3])
+    images, labels = input_fn(
+        FLAGS.train_list, n_batch=FLAGS.n_batch, n_epoch=FLAGS.n_epoch)
     y_pred_op = cnn_classifier(images, reuse=False)
 
-    # # loss
-    # loss = tf.losses.softmax_cross_entropy(
-    #     tf.one_hot(labels, depth=2),
-    #     )
+    # loss
+    loss_op = tf.losses.softmax_cross_entropy(
+        tf.one_hot(labels, depth=2),
+        y_pred_op)
 
-    # values = input_fn(FLAGS.train_list, FLAGS.n_batch)  # for debug of input_fn
+    # training
+    optimizer = tf.train.GradientDescentOptimizer(0.01)
+    train_op = optimizer.minimize(loss_op)
+
+    # valiable initialization
+    init = tf.global_variables_initializer()
 
     # Run-Graph
     sess = tf.Session()
     # initialize
-    init = tf.global_variables_initializer()
     sess.run(init)
     try:
         while True:
-            #y_pred = sess.run(images)
-            y_pred = sess.run(y_pred_op)
-            print("{}".format(y_pred.shape))
+            _, loss, imgs = sess.run((train_op, loss_op, images))
+            print("{}, {}".format(loss, imgs.shape))
     except tf.errors.OutOfRangeError:
         pass
-
-    # try:
-    #     while True:
-    #         imgs, labels = sess.run(values)
-    #         labels = tf.one_hot(labels, depth=2)
-    #         print('{}, {}, {}'.format(imgs.shape, labels.shape, labels))
-    # except tf.errors.OutOfRangeError:
-    #     pass
-
-    # try:
-    #     while True:
-    #         img, label = sess.run(value)
-    #         print("{}, {}".format(img.shape, label))
-    # except tf.errors.OutOfRangeError:
-    #     pass
-    #
-    # try:
-    #     while True:
-    #         img, label = sess.run(value_test)
-    #         print("{}, {}".format(img.shape, label))
-    # except tf.errors.OutOfRangeError:
-    #     pass
 
     return 0
 
