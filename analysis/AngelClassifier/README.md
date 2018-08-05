@@ -12,21 +12,18 @@
 ## 手順
 ### パッケージ画像の前処理
 - パッケージ画像の余分な領域を削除する
+  - ToDo:ここで画像サイズをリサイズしているが、以下の学習処理の中でリサイズしたい
 
 ```
 $ cd choco-ball-statistics/analysis
 $ python package-image-preprocess.py
 ```
 
-### 定義ファイルの作成
-- パッケージ画像のラベル付きリストを作成
-
-```
-$ python make-image-def.py
-$ python make-image-def.py --help で引数確認
-
-defaultで以下のファイルが作成される
- - image_list_test.csv
- - image_list_train.csv
-```
 ### 学習処理
+- 学習処理
+  - コマンドライン引数の詳細は`--help`参照
+
+```
+$ python cnn_angel.py 
+```
+

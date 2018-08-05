@@ -200,6 +200,16 @@ def trimPackageImage(im_path, show=False, brown_basis=(0.4, 0.5)):
     return package_img
 
 
+def resize_image(image, ratio=1.0):
+    """
+    Resize
+    """
+    orgHeight, orgWidth = image.shape[:2]
+    size = (int(orgWidth * ratio), int(orgHeight * ratio))
+    image = cv2.resize(image, size)
+    return image
+
+
 def main(args):
     # # 画像データの取り込み
     im_dir = args.im_dir
@@ -216,6 +226,8 @@ def main(args):
 
         # パッケージ画像のトリミング
         package_img = trimPackageImage(im_path=im_path, show=args.show)
+        # リサイズ
+        package_img = resize_image(package_img, ratio=args.resize_ratio)
         # トリム画像を保存する
         im_name = os.path.basename(im_path)
         cv2.imwrite(
@@ -227,6 +239,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='argparser')
     parser.add_argument('--im_name', type=str)
     parser.add_argument('--im_dir', type=str, default='../data/packages')
+    parser.add_argument('--resize_ratio', default=0.25, type=int)
     parser.add_argument('--show', action='store_true')
     args = parser.parse_args()
 

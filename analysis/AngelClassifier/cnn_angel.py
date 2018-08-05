@@ -12,8 +12,9 @@ tf.app.flags.DEFINE_string(
     "train_list", "image_list_train.csv", "image data list(csv)")
 tf.app.flags.DEFINE_string(
     "test_list", "image_list_test.csv", "image data list(csv)")
-tf.app.flags.DEFINE_integer("n_batch", 5, "mini batch size")
-tf.app.flags.DEFINE_integer("n_epoch", 10, "number of epoch")
+tf.app.flags.DEFINE_integer("n_batch", 10, "mini batch size")
+tf.app.flags.DEFINE_integer("n_epoch", 5, "number of epoch")
+tf.app.flags.DEFINE_integer("valid_step", 2, "validation interval")
 
 tf.app.flags.DEFINE_string("img_path", "images", "image data path")
 tf.app.flags.DEFINE_string(
@@ -45,81 +46,106 @@ def createImageListFile(img_path, db_path, train_file, test_file, out_dir='.', t
 
 
 # ###########################
-# ### Read Image Files
-def read_csv(filename):
-    """
-    データファイルの定義ファイルを読み込むgeneratorを作る
-    CSV形式(,区切り)で、一行に[filename, label]の想定
-    Args:
-        filename:Dataset Definition File(full path)
-    """
-    with open(filename, 'r') as f:
-        for line in f.readlines():
-            record = line.rstrip().split(',')
-            image_file = record[0]
-            label = int(record[1])
-            yield image_file, label
+# ### Data Class
+class DataSet:
+    def __init__(self, file_path, n_batch):
+        self.file_path = file_path
+        self.n_batch = n_batch
 
+    # ###########################
+    # ### Input data function
+    def get_input_op(self):
+        """
+        データ入力関数
+        """
+        def generator():
+            return self.read_csv(self.file_path)  # generator
+        dataset = tf.data.Dataset.from_generator(
+            generator,
+            output_types=(tf.string, tf.int64),
+            output_shapes=(tf.TensorShape([]), tf.TensorShape([])))\
+            .map(self.read_image)
+        dataset = dataset.shuffle(10000)
+        dataset = dataset.batch(self.n_batch)
+        iterator = dataset.make_initializable_iterator()
+        images, labels = iterator.get_next()
+        self.iterator = iterator
+        return images, labels
 
-def read_image(image_file, label):
-    """
-    Args:
-        image_file:path of image file [string]
-        label:label [int]
-    Returns:
-        image_tensor:Tensor with type uint8 with shape [height, width, num_channels]
-        label:label [int]
-    """
-    contents = tf.read_file(image_file)
-    image = tf.image.decode_image(contents)  # 画像データを[0,1)の範囲に変換
-    image = tf.image.convert_image_dtype(image, dtype=tf.float32)
-    # return tf.image.decode_image(contents), label
-    return image, label
+    # ###########################
+    # ### Read Image Files
+    def read_csv(self, filename):
+        """
+        データファイルの定義ファイルを読み込むgeneratorを作る
+        CSV形式(,区切り)で、一行に[filename, label]の想定
+        Args:
+            filename:Dataset Definition File(full path)
+        """
+        with open(filename, 'r') as f:
+            for line in f.readlines():
+                record = line.rstrip().split(',')
+                image_file = record[0]
+                label = int(record[1])
+                yield image_file, label
 
-
-# ###########################
-# ### Input data function
-def input_fn(file_path, n_batch, n_epoch):
-    """
-    データ入力関数
-    lambda式を使って引数を与えて入力する
-    参考
-    https://developers.googleblog.com/2017/09/introducing-tensorflow-datasets.html
-    """
-    def generator():
-        return read_csv(file_path)  # generator
-    dataset = tf.data.Dataset.from_generator(
-        generator,
-        output_types=(tf.string, tf.int32),
-        output_shapes=(tf.TensorShape([]), tf.TensorShape([])))\
-        .map(read_image)
-    dataset = dataset.shuffle(10000)
-    dataset = dataset.repeat(n_epoch)
-    dataset = dataset.batch(n_batch)
-    iterator = dataset.make_one_shot_iterator()
-    images, labels = iterator.get_next()
-    return images, labels
+    def read_image(self, image_file, label):
+        """
+        Args:
+            image_file:path of image file [string]
+            label:label [int]
+        Returns:
+            image_tensor:Tensor with type uint8 with shape [height, width, num_channels]
+            label:label [int]
+        """
+        contents = tf.read_file(image_file)
+        image = tf.image.decode_image(contents)  # 画像データを[0,1)の範囲に変換
+        image = tf.image.convert_image_dtype(image, dtype=tf.float32)
+        return image, label
 
 
 # ###########################
 # ### Define Model
 def cnn_classifier(images, reuse):
+    """
+    Model
+    """
     with tf.variable_scope('cnn', reuse=reuse):
-        x = tf.reshape(images, [-1, 1100, 1480, 3])
+        x = tf.reshape(images, [-1, 275, 370, 3])  # [-1, 1100, 1480, 3]
         conv1 = tf.layers.conv2d(
-            x, filters=32, kernel_size=(10, 10),
+            x, filters=32, kernel_size=(5, 5),
             padding='same', activation=tf.nn.relu)
         pool1 = tf.layers.max_pooling2d(
-            conv1, pool_size=(10, 10), strides=(10, 10))
+            conv1, pool_size=(5, 5), strides=(5, 5))
         conv2 = tf.layers.conv2d(
-            pool1, filters=64, kernel_size=(5, 5),
+            pool1, filters=64, kernel_size=(3, 3),
             padding='same', activation=tf.nn.relu)
         pool2 = tf.layers.max_pooling2d(
-            conv2, pool_size=(5, 5), strides=(5, 5))
+            conv2, pool_size=(3, 3), strides=(3, 3))
         pool2_flat = tf.contrib.layers.flatten(pool2)
         fc3 = tf.layers.dense(pool2_flat, 1024)
-        fc4 = tf.layers.dense(fc3, 2)
-    return fc4
+        out = tf.layers.dense(fc3, 2)
+    return out
+
+
+# ###########################
+# ### Evaluation Function
+def evaluation(sess, features, labels):
+    # Inference
+    y_pred = cnn_classifier(features, reuse=True)
+    # validate
+    correct = tf.equal(tf.argmax(y_pred, 1), labels)
+    n_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
+    # buffer
+    total_acc = 0.0
+    total_features = 0
+    try:
+        while True:
+            imgs, nc = sess.run((features, n_correct))
+            total_acc += nc
+            total_features += imgs.shape[0]
+    except tf.errors.OutOfRangeError:
+        pass
+    return (total_acc/total_features)
 
 
 # ###########################
@@ -131,33 +157,55 @@ def main(argv):
     createImageListFile(FLAGS.img_path, FLAGS.db_path,
                         FLAGS.train_list, FLAGS.test_list)
 
+    # create dataset
+    train_dataset = DataSet(FLAGS.train_list, n_batch=FLAGS.n_batch)
+    train_images, train_labels = train_dataset.get_input_op()
+    valid_dataset = DataSet(FLAGS.test_list,  n_batch=FLAGS.n_batch)
+    valid_images, valid_labels = valid_dataset.get_input_op()
+
     # Inference
-    images, labels = input_fn(
-        FLAGS.train_list, n_batch=FLAGS.n_batch, n_epoch=FLAGS.n_epoch)
-    y_pred_op = cnn_classifier(images, reuse=False)
+    y_pred = cnn_classifier(train_images, reuse=False)
 
     # loss
-    loss_op = tf.losses.softmax_cross_entropy(
-        tf.one_hot(labels, depth=2),
-        y_pred_op)
+    loss = tf.losses.softmax_cross_entropy(
+        tf.one_hot(train_labels, depth=2),
+        y_pred)
 
     # training
     optimizer = tf.train.GradientDescentOptimizer(0.01)
-    train_op = optimizer.minimize(loss_op)
+    train = optimizer.minimize(loss)
 
-    # valiable initialization
+    # initializer
     init = tf.global_variables_initializer()
-
     # Run-Graph
     sess = tf.Session()
     # initialize
     sess.run(init)
-    try:
-        while True:
-            _, loss, imgs = sess.run((train_op, loss_op, images))
-            print("{}, {}".format(loss, imgs.shape))
-    except tf.errors.OutOfRangeError:
-        pass
+    for epoch in range(FLAGS.n_epoch):
+        sess.run(train_dataset.iterator.initializer)
+        loss_epoch = 0.0
+        n_images = 0
+        try:
+            while True:
+                # training operation
+                _, imgs, tmp_loss = sess.run((train, train_images, loss))
+                loss_epoch += tmp_loss
+                n_images += imgs.shape[0]
+
+        except tf.errors.OutOfRangeError:
+            loss_epoch = loss_epoch/n_images
+            print('epoch:{}/{}, images:{}, mean_loss:{}'.format(
+                epoch, FLAGS.n_epoch, n_images, loss_epoch))
+            pass
+
+        if epoch % FLAGS.valid_step == 0:
+            # validating operation
+            sess.run(train_dataset.iterator.initializer)
+            sess.run(valid_dataset.iterator.initializer)
+            acc_train = evaluation(sess, train_images, train_labels)
+            acc_valid = evaluation(sess, valid_images, valid_labels)
+            print('accuracy[epoch:{}]:{}, {}'.format(
+                epoch, acc_train, acc_valid))
 
     return 0
 
