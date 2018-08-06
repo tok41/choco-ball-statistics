@@ -155,17 +155,6 @@ def evaluation(sess, features, labels):
     return (total_acc/total_features)
 
 
-def evaluate(features, labels):
-    with tf.name_scope('evaluate_test'):
-        # Inference
-        y_pred = cnn_classifier(features, reuse=True)
-        # validate
-        correct = tf.equal(tf.argmax(y_pred, 1), labels)
-        n_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
-        accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
-    return n_correct, accuracy
-
-
 # ###########################
 # ### Main
 def main(argv):
@@ -191,7 +180,7 @@ def main(argv):
         loss = tf.losses.softmax_cross_entropy(
             tf.one_hot(train_labels, depth=2),
             y_pred)
-        tf.summary.scalar('loss', loss)
+    tf.summary.scalar('loss', loss)
 
     # training
     with tf.name_scope('train'):
@@ -199,26 +188,22 @@ def main(argv):
         train = optimizer.minimize(loss)
 
     # evaluating
-    with tf.name_scope('evaluate'):
-        correct = tf.equal(tf.argmax(y_pred, 1), train_labels)
-        n_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
-        accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
-        tf.summary.scalar('accuracy', accuracy)
+    with tf.name_scope('accuracy'):
+        with tf.name_scope('correct_prediction'):
+            correct = tf.equal(tf.argmax(y_pred, 1), train_labels)
+        with tf.name_scope('accuracy'):
+            n_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
+            accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+    tf.summary.scalar('accuracy', accuracy)
 
-    # evaluate test data
-    n_correct_valid, accuracy_valid = evaluate(valid_images, valid_labels)
-    tf.summary.scalar('accuracy_valid', accuracy_valid)
-
-    # initializer
-    init = tf.global_variables_initializer()
     # Run-Graph
     sess = tf.Session()
     # log merged
     merged = tf.summary.merge_all()
     train_writer = tf.summary.FileWriter(FLAGS.log_dir + '/train',
                                          sess.graph)
-    test_writer = tf.summary.FileWriter(FLAGS.log_dir + '/test')
-    # initialize
+    # initializer
+    init = tf.global_variables_initializer()
     sess.run(init)
     for epoch in range(FLAGS.n_epoch):
         sess.run(train_dataset.iterator.initializer)
@@ -235,7 +220,6 @@ def main(argv):
                 loss_epoch += tmp_loss
                 acc_epoch += tmp_nc
                 n_images += imgs.shape[0]
-
         except tf.errors.OutOfRangeError:
             loss_epoch = loss_epoch/n_images
             acc_epoch = acc_epoch/n_images
@@ -244,26 +228,12 @@ def main(argv):
             pass
 
         if epoch % FLAGS.valid_step == 0:
-            # validating operation
             sess.run(train_dataset.iterator.initializer)
             sess.run(valid_dataset.iterator.initializer)
-            total_acc = 0.0
-            total_features = 0
-            try:
-                while True:
-                    imgs, nc, ac, summary_valid = sess.run(
-                        [valid_images, n_correct_valid, accuracy_valid, merged])
-                    test_writer.add_summary(summary_valid, epoch)
-                    total_acc += nc
-                    total_features += imgs.shape[0]
-            except tf.errors.OutOfRangeError:
-                print('accuracy[epoch:{}]:{}'.format(
-                    epoch, total_acc/total_features))
-                pass
-            # acc_train = evaluation(sess, train_images, train_labels)
-            # acc_valid = evaluation(sess, valid_images, valid_labels)
-            # print('accuracy[epoch:{}]:{}, {}'.format(
-            #     epoch, acc_train, acc_valid))
+            train_accuracy = evaluation(sess, train_images, train_labels)
+            valid_accuracy = evaluation(sess, valid_images, valid_labels)
+            print('epoch[{}]:{}, {}'.format(
+                epoch, train_accuracy, valid_accuracy))
 
     return 0
 
