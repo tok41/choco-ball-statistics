@@ -202,6 +202,7 @@ def main(argv):
     merged = tf.summary.merge_all()
     train_writer = tf.summary.FileWriter(FLAGS.log_dir + '/train',
                                          sess.graph)
+    test_writer = tf.summary.FileWriter(FLAGS.log_dir + '/test')
     # initializer
     init = tf.global_variables_initializer()
     sess.run(init)
@@ -228,12 +229,16 @@ def main(argv):
             pass
 
         if epoch % FLAGS.valid_step == 0:
-            sess.run(train_dataset.iterator.initializer)
             sess.run(valid_dataset.iterator.initializer)
-            train_accuracy = evaluation(sess, train_images, train_labels)
-            valid_accuracy = evaluation(sess, valid_images, valid_labels)
-            print('epoch[{}]:{}, {}'.format(
-                epoch, train_accuracy, valid_accuracy))
+            summary, acc = sess.run([merged, accuracy])
+            print("evaluate:{}".format(epoch, acc))
+            test_writer.add_summary(summary, epoch)
+            # sess.run(train_dataset.iterator.initializer)
+            # sess.run(valid_dataset.iterator.initializer)
+            # train_accuracy = evaluation(sess, train_images, train_labels)
+            # valid_accuracy = evaluation(sess, valid_images, valid_labels)
+            # print('epoch[{}]:{}, {}'.format(
+            #     epoch, train_accuracy, valid_accuracy))
 
     return 0
 
