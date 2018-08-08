@@ -50,26 +50,33 @@ def createImageListFile(img_path, db_path, train_file, test_file, out_dir='.', t
 # ### Data Class
 class DataSet:
     def __init__(self, file_path, n_batch):
+        """
+        Args:
+            file_path:Path of Image List File(string)
+            n_batch:batch size(int)
+        Returns:
+            dataset:Dataset(tf.data.Dataset)
+        """
         self.file_path = file_path
         self.n_batch = n_batch
+        self.shuffle_buffer = 10000
 
-    def get_input_op(self):
+    def make_dataset(self):
         """
-        データ入力関数
+        DataSetを作る
+        Retruns:
+            dataset:Dataset(tf.data.Dataset)
         """
         def generator():
             return self.read_csv(self.file_path)  # generator
         dataset = tf.data.Dataset.from_generator(
             generator,
             output_types=(tf.string, tf.int64),
-            output_shapes=(tf.TensorShape([]), tf.TensorShape([])))\
-            .map(self.read_image)
-        dataset = dataset.shuffle(10000)
+            output_shapes=(tf.TensorShape([]), tf.TensorShape([])))
+        dataset = dataset.map(self.read_image)
+        dataset = dataset.shuffle(self.shuffle_buffer)
         dataset = dataset.batch(self.n_batch)
-        iterator = dataset.make_initializable_iterator()
-        images, labels = iterator.get_next()
-        self.iterator = iterator
-        return images, labels
+        return dataset
 
     def read_csv(self, filename):
         """
@@ -133,29 +140,6 @@ def cnn_classifier(images, reuse):
 
 
 # ###########################
-# ### Evaluation Function
-def evaluation(sess, features, labels):
-    # Inference
-    y_pred = cnn_classifier(features, reuse=True)
-    # validate
-    correct = tf.equal(tf.argmax(y_pred, 1), labels)
-    n_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
-    accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
-
-    # buffer
-    total_acc = 0.0
-    total_features = 0
-    try:
-        while True:
-            imgs, nc, ac = sess.run([features, n_correct, accuracy])
-            total_acc += nc
-            total_features += imgs.shape[0]
-    except tf.errors.OutOfRangeError:
-        pass
-    return (total_acc/total_features)
-
-
-# ###########################
 # ### Main
 def main(argv):
     FLAGS = tf.app.flags.FLAGS
@@ -165,20 +149,24 @@ def main(argv):
                         FLAGS.train_list, FLAGS.test_list)
 
     # create dataset
-    with tf.name_scope('train_input'):
-        train_dataset = DataSet(FLAGS.train_list, n_batch=FLAGS.n_batch)
-        train_images, train_labels = train_dataset.get_input_op()
-    with tf.name_scope('test_input'):
-        valid_dataset = DataSet(FLAGS.test_list,  n_batch=FLAGS.n_batch)
-        valid_images, valid_labels = valid_dataset.get_input_op()
+    train_ds = DataSet(FLAGS.train_list, n_batch=FLAGS.n_batch)
+    train_dataset = train_ds.make_dataset()
+    valid_ds = DataSet(FLAGS.test_list,  n_batch=FLAGS.n_batch)
+    valid_dataset = valid_ds.make_dataset()
+
+    # Iterator
+    with tf.name_scope('input_data'):
+        iterator = tf.data.Iterator.from_structure(train_dataset.output_types,
+                                                   train_dataset.output_shapes)
+        next_element = iterator.get_next()
 
     # Inference
-    y_pred = cnn_classifier(train_images, reuse=False)
+    y_pred = cnn_classifier(next_element[0], reuse=False)
 
     # loss
     with tf.name_scope('loss'):
         loss = tf.losses.softmax_cross_entropy(
-            tf.one_hot(train_labels, depth=2),
+            tf.one_hot(next_element[1], depth=2),
             y_pred)
     tf.summary.scalar('loss', loss)
 
@@ -190,11 +178,20 @@ def main(argv):
     # evaluating
     with tf.name_scope('accuracy'):
         with tf.name_scope('correct_prediction'):
-            correct = tf.equal(tf.argmax(y_pred, 1), train_labels)
+            correct = tf.equal(tf.argmax(y_pred, 1), next_element[1])
         with tf.name_scope('accuracy'):
             n_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
             accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+        with tf.name_scope('confusion_matrix'):
+            cmat = tf.confusion_matrix(
+                next_element[1], tf.argmax(y_pred, 1), num_classes=2)
     tf.summary.scalar('accuracy', accuracy)
+
+    # initializer of iterators(training_iterator, validation_iterator)
+    with tf.name_scope('train_dataset'):
+        training_init_op = iterator.make_initializer(train_dataset)
+    with tf.name_scope('test_dataset'):
+        validation_init_op = iterator.make_initializer(valid_dataset)
 
     # Run-Graph
     sess = tf.Session()
@@ -207,19 +204,19 @@ def main(argv):
     init = tf.global_variables_initializer()
     sess.run(init)
     for epoch in range(FLAGS.n_epoch):
-        sess.run(train_dataset.iterator.initializer)
-        sess.run(valid_dataset.iterator.initializer)
+        sess.run(training_init_op)
         loss_epoch = 0.0
         acc_epoch = 0.0
         n_images = 0
         try:
             while True:
                 # training operation
-                _, imgs, tmp_loss, tmp_nc, tmp_acc, summary = sess.run(
-                    [train, train_images, loss, n_correct, accuracy, merged])
+                _, elements, tmp_loss, tmp_nc, tmp_acc, summary = sess.run(
+                    [train, next_element, loss, n_correct, accuracy, merged])
                 train_writer.add_summary(summary, epoch)
                 loss_epoch += tmp_loss
                 acc_epoch += tmp_nc
+                imgs = elements[0]
                 n_images += imgs.shape[0]
         except tf.errors.OutOfRangeError:
             loss_epoch = loss_epoch/n_images
@@ -229,16 +226,26 @@ def main(argv):
             pass
 
         if epoch % FLAGS.valid_step == 0:
-            sess.run(valid_dataset.iterator.initializer)
-            summary, acc = sess.run([merged, accuracy])
-            print("evaluate:{}".format(epoch, acc))
-            test_writer.add_summary(summary, epoch)
-            # sess.run(train_dataset.iterator.initializer)
-            # sess.run(valid_dataset.iterator.initializer)
-            # train_accuracy = evaluation(sess, train_images, train_labels)
-            # valid_accuracy = evaluation(sess, valid_images, valid_labels)
-            # print('epoch[{}]:{}, {}'.format(
-            #     epoch, train_accuracy, valid_accuracy))
+            sess.run(validation_init_op)
+            acc_epoch = 0.0
+            n_images = 0
+            conf_mat = None
+            try:
+                while True:
+                    summary, elements, acc, cm = sess.run(
+                        [merged, next_element, accuracy, cmat])
+                    test_writer.add_summary(summary, epoch)
+                    acc_epoch += acc
+                    imgs = elements[0]
+                    n_images += imgs.shape[0]
+                    if conf_mat is None:
+                        conf_mat = cm
+                    else:
+                        conf_mat += cm
+            except tf.errors.OutOfRangeError:
+                acc_epoch = acc_epoch/n_images
+                print("evaluate[{}]:{}".format(epoch, acc))
+                print(conf_mat)
 
     return 0
 
