@@ -2,6 +2,7 @@
 
 # Imports
 import os
+import shutil
 import tensorflow as tf
 import make_image_def as mid
 
@@ -14,7 +15,7 @@ tf.app.flags.DEFINE_string(
 tf.app.flags.DEFINE_string(
     "test_list", "image_list_test.csv", "image data list(csv)")
 tf.app.flags.DEFINE_integer("n_batch", 10, "mini batch size")
-tf.app.flags.DEFINE_integer("n_epoch", 5, "number of epoch")
+tf.app.flags.DEFINE_integer("n_epoch", 20, "number of epoch")
 tf.app.flags.DEFINE_integer("valid_step", 2, "validation interval")
 
 tf.app.flags.DEFINE_string("img_path", "images", "image data path")
@@ -195,6 +196,8 @@ def main(argv):
 
     # Run-Graph
     sess = tf.Session()
+    # Clear Log-Directory
+    shutil.rmtree(FLAGS.log_dir)
     # log merged
     merged = tf.summary.merge_all()
     train_writer = tf.summary.FileWriter(FLAGS.log_dir + '/train',
@@ -203,6 +206,8 @@ def main(argv):
     # initializer
     init = tf.global_variables_initializer()
     sess.run(init)
+    # saver
+    saver = tf.train.Saver()
     for epoch in range(FLAGS.n_epoch):
         sess.run(training_init_op)
         loss_epoch = 0.0
@@ -246,6 +251,10 @@ def main(argv):
                 acc_epoch = acc_epoch/n_images
                 print("evaluate[{}]:{}".format(epoch, acc))
                 print(conf_mat)
+    # save model
+    save_path = saver.save(sess, os.path.join(
+        FLAGS.log_dir, "model_{:04}.ckpt".format(epoch)))
+    print("Model saved in path:{}".format(save_path))
 
     return 0
 
