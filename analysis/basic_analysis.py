@@ -102,12 +102,15 @@ def main():
                 spec=args.spec)
     # 集計結果表示用
     latest_date = m_data['measure_date'].max()
-    latest_data = m_data[m_data['measure_date']==latest_date][['measure_date', 'best_before',
-                                      'weight', 'box_weight', 'ball_number', 'factory', 'shop',
-                                      'angel', 'net_weight', 'mean_weight']]
-    latest_data['angel'] = ['銀' if a==1 else 'なし' for a in latest_data['angel']]
-    latest_data['net_weight'] = ["%2.3f"%(a) for a in latest_data['net_weight']]
-    latest_data['mean_weight'] = ["%2.3f"%(a) for a in latest_data['mean_weight']]
+    latest_data = m_data[m_data['measure_date'] == latest_date][['measure_date', 'best_before',
+                                                                 'weight', 'box_weight', 'ball_number', 'factory', 'shop',
+                                                                 'angel', 'net_weight', 'mean_weight']]
+    latest_data['angel'] = ['銀' if a ==
+                            1 else 'なし' for a in latest_data['angel']]
+    latest_data['net_weight'] = ["%2.3f" %
+                                 (a) for a in latest_data['net_weight']]
+    latest_data['mean_weight'] = ["%2.3f" %
+                                  (a) for a in latest_data['mean_weight']]
     print(latest_data.to_csv(sep='|', index=False, header=False))
     # 基礎集計表示用
     print('| 計測データ数 | {} |'.format(m_data.shape[0]))
