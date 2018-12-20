@@ -79,14 +79,14 @@ def printAngelNumber(data):
     return 0
 
 
-def getAngelRate(data_angel, fig_name='fig/estimate_angel_rate_latest.png'):
+def getAngelRate(data_angel, p_range=(0, 0.5), fig_name='fig/estimate_angel_rate_latest.png'):
     fig = plt.figure(figsize=(10, 6))
     ax = fig.add_subplot(1, 1, 1)
 
     p_trace = getMCMCResult(data_angel)
-    ret = ax.hist(p_trace, bins=np.linspace(0, 0.5, 50), density=True,
+    ret = ax.hist(p_trace, bins=np.linspace(p_range[0], p_range[1], 50), density=True,
                   color="#0000FF", alpha=0.5, edgecolor="#0000FF", lw=2)
-    ax.set_xlim([0, 0.5])
+    ax.set_xlim([p_range[0], p_range[1]])
     N = len(p_trace)
     bci_g = np.sort(p_trace)[int(N * 0.95)]
     bci_l = np.sort(p_trace)[int(N * 0.05)]
@@ -118,9 +118,9 @@ if __name__ == '__main__':
     # エンゼルの集計をする
     # 銀のエンゼル
     data_angel = np.array([1 if a == 1 else 0 for a in data['angel'].values])
-    getAngelRate(data_angel=data_angel,
+    getAngelRate(data_angel=data_angel, p_range=(0, 0.2),
                  fig_name='fig/estimate_angel_rate_silver.png')
     # 金のエンゼル
     data_angel = np.array([1 if a == 2 else 0 for a in data['angel'].values])
-    getAngelRate(data_angel=data_angel,
+    getAngelRate(data_angel=data_angel, p_range=(0, 0.05),
                  fig_name='fig/estimate_angel_rate_gold.png')
