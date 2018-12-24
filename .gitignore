@@ -1,13 +1,14 @@
 
 *.pyc
+
 *.png
 *.gif
-
 *.JPG
 *.jpeg
-*.png
 *.csv
+
 *.xml
+
 *.npy
 *.npz
 
@@ -19,3 +20,4 @@
 test/
 archives/
 logs/
+env_choco/

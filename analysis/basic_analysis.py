@@ -4,6 +4,10 @@
 # # 目的
 # - 基礎的な集計をする
 
+import argparse
+import ChocoUtils as util
+from datetime import datetime as dt
+import matplotlib.pyplot as plt
 import sys
 import os
 import sqlite3
@@ -13,49 +17,15 @@ import scipy.stats as stats
 
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 
-from datetime import datetime as dt
-
-import argparse
 
 parser = argparse.ArgumentParser(description='argparser')
 parser.add_argument('--filter', type=str, default='taste=0')
 parser.add_argument('--spec', type=float, default=28.0)
 parser.add_argument('--table', type=str, default='measurement')
 parser.add_argument('--db', type=str, default='../data/choco-ball.db')
+parser.add_argument('--out', type=str, default='fig')
 args = parser.parse_args()
-
-
-# # データの取得
-def get_data(db_file='../data/choco-ball.db',
-             table_name='measurement', filter_str=None):
-    """
-    dbファイルから計測データを取得する
-
-    TODO:
-        エラー処理を入れる
-    """
-    con = sqlite3.connect(db_file)
-    sql = 'SELECT '
-    sql += 'measure_date,best_before,prd_number,weight,box_weight,ball_number,factory,shop,angel,campaign,taste '
-    sql += ', (weight - box_weight), (weight - box_weight)/ball_number '
-    sql += 'FROM ' + table_name + ' '
-    if filter_str is not None:
-        sql += 'WHERE ' + filter_str
-    sql += ';'
-    # print(sql)
-    sql_result = con.execute(sql)
-    res = sql_result.fetchall()
-    con.close()
-    data = pd.DataFrame(res, columns=['measure_date', 'best_before',
-                                      'prd_number', 'weight', 'box_weight',
-                                      'ball_number', 'factory', 'shop',
-                                      'angel', 'campaign', 'taste',
-                                      'net_weight', 'mean_weight'])
-    print('Shape of MeasurementData(record_num, n_columns) : {}'.format(
-        data.shape))
-    return data
 
 
 def get_date_str():
@@ -91,14 +61,15 @@ def main():
     db_file = args.db
     table_name = args.table
     filter_str = args.filter
+    output_dir = args.out
     # 計測データ取得
-    m_data = get_data(db_file=db_file, table_name=table_name,
-                      filter_str=filter_str)
+    m_data = util.get_data(db_file=db_file, table_name=table_name,
+                           filter_str=filter_str)
     # ファイル名のラベルのために日付を取得
     t_str = get_date_str()
     # データ集計
     output_hist(data=m_data,
-                plt_file='fig/base_hist_{}.png'.format(t_str),
+                plt_file='{}/base_hist_{}.png'.format(output_dir, t_str),
                 spec=args.spec)
     # 集計結果表示用
     latest_date = m_data['measure_date'].max()

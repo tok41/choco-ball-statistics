@@ -8,7 +8,6 @@ import pandas as pd
 import argparse
 
 parser = argparse.ArgumentParser(description='argparser')
-#parser.add_argument('--file', type=str, default=None)
 parser.add_argument('--file', type=str, default=None)
 parser.add_argument('--table', type=str, default='measurement')
 parser.add_argument('--db', type=str, default='choco-ball.db')
