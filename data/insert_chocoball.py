@@ -8,7 +8,6 @@ import pandas as pd
 import argparse
 
 parser = argparse.ArgumentParser(description='argparser')
-#parser.add_argument('--file', type=str, default=None)
 parser.add_argument('--file', type=str, default=None)
 parser.add_argument('--table', type=str, default='measurement')
 parser.add_argument('--db', type=str, default='choco-ball.db')
@@ -46,7 +45,10 @@ def insert_data(con, data_file, table_name):
     CSVデータファイルを読み込み、全てのデータをinsertする
     """
     print('InsertInto : {} -> {}'.format(data_file, table_name))
-    data = pd.read_csv(data_file, encoding="utf-8")
+    if os.path.splitext(data_file)[1] == '.tsv':
+        data = pd.read_csv(data_file, encoding="utf-8", sep='\t')
+    else:
+        data = pd.read_csv(data_file, encoding="utf-8")
     con.executemany('insert into {} (measure_date,best_before,prd_number,weight,box_weight,ball_number,factory,shop,angel,campaign,taste, buyer) values (?,?,?,?,?,?,?,?,?,?,?,?)'.format(
         table_name), np.array(data))
     con.commit()

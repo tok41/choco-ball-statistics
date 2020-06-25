@@ -1,0 +1,11 @@
+version: '3'
+
+services: 
+    python:
+        build: 
+            context: ./
+            dockerfile: Dockerfile
+        image: chocoball:1.0
+        container_name: choco
+        ports:
+            - "8866:9999"
