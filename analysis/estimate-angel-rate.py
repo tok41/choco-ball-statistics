@@ -39,6 +39,7 @@ def getAngelRate(data, n_sample=10000, n_chain=3, ax=None):
             piw = pi*weight[i]
             m = pm.Multinomial('m_%s'%(i), n=np.sum(d[i]), p=piw, observed=d[i])
         trace = pm.sample(n_sample, chains=n_chain)
+    np.savetxt('trace_pi.csv', trace['pi'], delimiter=',')
     # Silver
     hpd_l, hpd_u = pm.hpd(trace['pi'][:,1])
     print('Silver : 95% HPD : {}-{}'.format(hpd_l, hpd_u))
