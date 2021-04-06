@@ -13,6 +13,10 @@ class ParticleFilter():
         self.system_model = system_model
         self.observ_model = obs_model
         self.params = params
+        if "emp_dist" in params:
+            self.use_empirical_dist = True
+        else:
+            self.use_empirical_dist = False
         self.hist_particles = []
         #self.hist_particles.append(init_particles)
         self.hist_weigts = []
@@ -49,7 +53,8 @@ class ParticleFilter():
     def calc(self, obs):
         print(f'particle filtering')
         for i, y in tqdm(enumerate(obs)):
-            self.update_params()
+            if self.use_empirical_dist:
+                self.update_params()
             self.update()
             self.weight(y)
             self.resampling()
